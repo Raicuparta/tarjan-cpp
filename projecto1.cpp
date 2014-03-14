@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <iostream>
+#include <stack>
+
+using namespace std;
 
 class Pessoa {
 private:
@@ -8,11 +11,16 @@ private:
 	int _id;
 
 public:
+	int d;
+	int low;
+	bool used;
+
 
 	Pessoa() {
 		_partilhas = new Pessoa*;
 		_id = 0;
 		_numeroPartilhas = 0;
+		used = false;
 	}
 
 	Pessoa** getPartilhas() {
@@ -37,7 +45,26 @@ public:
 
 };
 
+int visitados = 0;
+stack<Pessoa> pilha;
 
+int tarjanVisit(Pessoa pessoa) {
+	pessoa.d = pessoa.low = visitados;
+	visitados++;
+	pilha.push(pessoa);
+	
+	
+	return 0;
+};
+
+int tarjanSCC(Pessoa* pessoas, int n) {
+	for (int i = 0; i < n; i++) {
+		if (!pessoas[i].used) {
+			tarjanVisit(pessoas[i]);
+		}
+	}
+	return 0;
+};
 
 int main(){
 		
