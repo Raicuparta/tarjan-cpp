@@ -13,6 +13,7 @@ private:
 public:
 	int d;
 	int low;
+	int scc;
 	bool used;
 	bool inStack;
 
@@ -24,12 +25,13 @@ public:
 		inStack = false;
 		d = -1;
 		low = -1;
+		scc = -1;
 	}
 
 	Pessoa* getPartilhas(int i) {
 		return _partilhas[i];
 	}
-	
+
 	int getNumeroPartilhas() {
 		return _numeroPartilhas;
 	}
@@ -41,7 +43,7 @@ public:
 	int getID() {
 		return _id + 1;
 	}
-	
+
 	void setID(int id) {
 		_id = id;
 	}
@@ -53,69 +55,64 @@ stack<Pessoa*> pilha;
 Pessoa*** sccs = new Pessoa**;
 int numeroSCCs = 0;
 int maiorSCC = 0;
+int sccsArcosFora = 0;
 
 int tarjanVisit(Pessoa* pessoa) {
-	//cerr << "TarjanVisit - dentro\n";
 	pessoa->d = pessoa->low = visitados;
 	pessoa->used = true;
 	visitados++;
 	pilha.push(pessoa);
-	//cerr << "Push\n";
 	pessoa->inStack = true;
 	for (int i = 0; i < pessoa->getNumeroPartilhas(); i++) {
-		//cerr << "For line 66\n";
 		if (!(pessoa->getPartilhas(i)->used)) {
-			//cerr << "TarjanVisit FOR line 64\n";
 			tarjanVisit(pessoa->getPartilhas(i));
-			//cerr << "Depois   TarjanVisit\n";
 			pessoa->low = min(pessoa->low, pessoa->getPartilhas(i)->low);
 		}
 		else if (pessoa->getPartilhas(i)->inStack) {
-			//cerr << "Se ja ta na pilha\nAntes min\n";
 			pessoa->low = min(pessoa->low, pessoa->getPartilhas(i)->d);
-			//cerr << "Dps min\n";
 		}
 	}
-	
-	cerr << "Saiu do FOR\n";
+
 	if (pessoa->low == pessoa->d) {
-		cerr << "Sitio dos pops\n";
-		
+
 		sccs[numeroSCCs] = new Pessoa*;
-		int i;
+		int i = 0;
 		for(i = 0; pilha.top() != pessoa; i++) {
-			cerr << "ID: " << pilha.top()->getID() << "\n";
 			Pessoa* p1 = pilha.top();
 			pilha.pop();
 			p1->inStack = false;
-			cerr << "4\n";
 			sccs[numeroSCCs][i] = p1;
-			cerr << "5\n";
+			p1->scc = numeroSCCs;
 			maiorSCC = max(maiorSCC, i+1);
-			cerr << "6\n";
 		}
 		if (pilha.top() == pessoa) {
-			cerr << "ID: " << pilha.top()->getID() << "\n";
 			pilha.pop();
 			pessoa->inStack = false;
-			cerr << "4.\n";
 			sccs[numeroSCCs][i] = pessoa;
-			cerr << "5.\n";
+			pessoa->scc = numeroSCCs;
 			maiorSCC = max(maiorSCC, i+1);
-			cerr << "6.\n";
 		}
+		
+		bool temArcosParaFora = false;
+		for(int j = 0; j <= i && !temArcosParaFora; j++) {
+			for(int k = 0; k < sccs[numeroSCCs][j]->getNumeroPartilhas() && !temArcosParaFora; k++) {
+				if( (sccs[numeroSCCs][j]->scc) != (sccs[numeroSCCs][j]->getPartilhas(k)->scc)) {
+					sccsArcosFora++;
+					temArcosParaFora = true;
+				}
+			}
+		}
+		
 		numeroSCCs++;
 	}
-	
-	
+
+
 	return 0;
 };
 
 int tarjanSCC(Pessoa** pessoas, int n) {
-	//cerr << "TarjanSCC - dentro\n";
 	for (int i = 0; i < n; i++) {
 		if (!pessoas[i]->used) {
-			//cerr << "Antes de tarjanVisit" << i << "\n";;
 			tarjanVisit(pessoas[i]);
 		}
 	}
@@ -123,17 +120,17 @@ int tarjanSCC(Pessoa** pessoas, int n) {
 };
 
 int main(){
-		
+
 	int n, p;
-	
+
 	scanf("%d %d", &n, &p);
-	
+
 	Pessoa** pessoas = new Pessoa*[n];
 	for (int i = 0; i < n; i++) {
 		pessoas[i] = new Pessoa;
 		pessoas[i]->setID(i);
 	}
-	
+
 	int pess1, pess2;
 	for (int i = 0; i < p; i++) {
 		scanf("%d %d", &pess1, &pess2);
@@ -141,10 +138,9 @@ int main(){
 		pess2--;
 		pessoas[pess1]->addPartilha(pessoas[pess2]);		
 	}
-	
-	cerr << "TarjanSCC\n";
+
 	tarjanSCC(pessoas, n);
-	
+
 	//TESTES FIXES
 	/*for (int i = 0; i < n; i++) {
 		printf("Pessoa %d:\n", i+1);
@@ -154,5 +150,5 @@ int main(){
 		
 	}
 	*/
-	printf("\n%d SCCs\nMaior tem %d elementos\n", numeroSCCs, maiorSCC); 
+	printf("%d\n%d\n%d\n", numeroSCCs, maiorSCC, numeroSCCs - sccsArcosFora); 
 }
