@@ -1,16 +1,14 @@
 #include <stdio.h>
 #include <iostream>
 #include <stack>
+#include <vector>
 
 using namespace std;
 
 class Pessoa {
-private:
-	Pessoa** _partilhas;
-	int _numeroPartilhas;
-	int _id;
 
 public:
+	vector<Pessoa*> partilhas;
 	int d;
 	int low;
 	int scc;
@@ -18,44 +16,23 @@ public:
 	bool inStack;
 
 	Pessoa() {
-		_partilhas = new Pessoa*;
-		_id = 0;
-		_numeroPartilhas = 0;
 		used = false;
 		inStack = false;
 		d = -1;
 		low = -1;
 		scc = -1;
 	}
-
-	Pessoa* getPartilhas(int i) {
-		return _partilhas[i];
-	}
-
-	int getNumeroPartilhas() {
-		return _numeroPartilhas;
-	}
-
-	void addPartilha(Pessoa* p){
-		_partilhas[_numeroPartilhas++] = p;
-	}
-
-	int getID() {
-		return _id + 1;
-	}
-
-	void setID(int id) {
-		_id = id;
-	}
-
 };
 
 int visitados = 0;
 stack<Pessoa*> pilha;
-Pessoa*** sccs = new Pessoa**;
+vector<vector<Pessoa*> > sccs;
+vector<Pessoa*> pessoas;
 int numeroSCCs = 0;
 int maiorSCC = 0;
 int sccsArcosFora = 0;
+
+
 
 int tarjanVisit(Pessoa* pessoa) {
 	pessoa->d = pessoa->low = visitados;
@@ -63,40 +40,41 @@ int tarjanVisit(Pessoa* pessoa) {
 	visitados++;
 	pilha.push(pessoa);
 	pessoa->inStack = true;
-	for (int i = 0; i < pessoa->getNumeroPartilhas(); i++) {
-		if (!(pessoa->getPartilhas(i)->used)) {
-			tarjanVisit(pessoa->getPartilhas(i));
-			pessoa->low = min(pessoa->low, pessoa->getPartilhas(i)->low);
+	for (int i = 0; i < (int)pessoa->partilhas.size(); i++) {
+		if (!(pessoa->partilhas[i]->used)) {
+			tarjanVisit(pessoa->partilhas[i]);
+			pessoa->low = min(pessoa->low, pessoa->partilhas[i]->low);
 		}
-		else if (pessoa->getPartilhas(i)->inStack) {
-			pessoa->low = min(pessoa->low, pessoa->getPartilhas(i)->d);
+		else if (pessoa->partilhas[i]->inStack) {
+			pessoa->low = min(pessoa->low, pessoa->partilhas[i]->d);
 		}
 	}
 
 	if (pessoa->low == pessoa->d) {
 
-		sccs[numeroSCCs] = new Pessoa*;
 		int i = 0;
+		vector<Pessoa*> currentScc;
 		for(i = 0; pilha.top() != pessoa; i++) {
 			Pessoa* p1 = pilha.top();
 			pilha.pop();
 			p1->inStack = false;
-			sccs[numeroSCCs][i] = p1;
+			currentScc.push_back(p1);
 			p1->scc = numeroSCCs;
 			maiorSCC = max(maiorSCC, i+1);
 		}
 		if (pilha.top() == pessoa) {
 			pilha.pop();
 			pessoa->inStack = false;
-			sccs[numeroSCCs][i] = pessoa;
+			currentScc.push_back(pessoa);
 			pessoa->scc = numeroSCCs;
 			maiorSCC = max(maiorSCC, i+1);
 		}
+		sccs.push_back(currentScc);
 		
 		bool temArcosParaFora = false;
 		for(int j = 0; j <= i && !temArcosParaFora; j++) {
-			for(int k = 0; k < sccs[numeroSCCs][j]->getNumeroPartilhas() && !temArcosParaFora; k++) {
-				if( (sccs[numeroSCCs][j]->scc) != (sccs[numeroSCCs][j]->getPartilhas(k)->scc)) {
+			for(int k = 0; k < (int)sccs[numeroSCCs][j]->partilhas.size() && !temArcosParaFora; k++) {
+				if( (sccs[numeroSCCs][j]->scc) != (sccs[numeroSCCs][j]->partilhas[k]->scc)) {
 					sccsArcosFora++;
 					temArcosParaFora = true;
 				}
@@ -110,7 +88,7 @@ int tarjanVisit(Pessoa* pessoa) {
 	return 0;
 };
 
-int tarjanSCC(Pessoa** pessoas, int n) {
+int tarjanSCC(int n) {
 	for (int i = 0; i < n; i++) {
 		if (!pessoas[i]->used) {
 			tarjanVisit(pessoas[i]);
@@ -125,10 +103,8 @@ int main(){
 
 	scanf("%d %d", &n, &p);
 
-	Pessoa** pessoas = new Pessoa*[n];
 	for (int i = 0; i < n; i++) {
-		pessoas[i] = new Pessoa;
-		pessoas[i]->setID(i);
+		pessoas.push_back(new Pessoa);
 	}
 
 	int pess1, pess2;
@@ -136,19 +112,19 @@ int main(){
 		scanf("%d %d", &pess1, &pess2);
 		pess1--;
 		pess2--;
-		pessoas[pess1]->addPartilha(pessoas[pess2]);		
+		pessoas[pess1]->partilhas.push_back(pessoas[pess2]);
 	}
 
-	tarjanSCC(pessoas, n);
+	tarjanSCC(n);
 
 	//TESTES FIXES
 	/*for (int i = 0; i < n; i++) {
 		printf("Pessoa %d:\n", i+1);
-		for (int j = 0; j < pessoas[i]->getNumeroPartilhas(); j++) {
-			printf("-%d\n", pessoas[i]->getPartilhas(j)->getID());
+		for (int j = 0; j < (int)pessoas[i]->partilhas.size(); j++) {
+			printf("-%d\n", pessoas[i]->partilhas[j]->getID());
 		}
 		
-	}
-	*/
+	}*/
+	
 	printf("%d\n%d\n%d\n", numeroSCCs, maiorSCC, numeroSCCs - sccsArcosFora); 
 }
